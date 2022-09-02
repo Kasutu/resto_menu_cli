@@ -1,85 +1,92 @@
-class RestoMenuInfo {
-  String name;
-  int price;
+mixin CustomLoop {
+  void loop<K, V>({
+    required Map<K, V> map,
+    required Function(K key, V value) action,
+    int index = 0,
+    bool reversed = false,
+    bool sortedKeys = false,
+  }) {
+    final keys = map.keys.toList();
+    final values = map.values.toList();
 
-  RestoMenuInfo(this.name, this.price);
+    if (sortedKeys == true) keys.sort();
+
+    while (reversed == true ? index != 0 : index < map.length) {
+      action(keys[index], values[index]);
+      reversed == true ? index-- : index++;
+    }
+
+    return;
+  }
 }
 
-class RestoMenuInfoImpl {
+class RestoMenuInfoImpl with CustomLoop {
   // use key value pairs as the menu is typically small
-  final Map<String, RestoMenuInfo> _menu = <String, RestoMenuInfo>{};
-  static final int maxItemToDisplay = 3;
+  final Map<String, int> _menu = <String, int>{};
 
-  void log(String type, RestoMenuInfo item) {
-    print('[$type] name: ${item.name} price: ${item.price}');
+  void log(String type, String name, int price) {
+    print('[$type] name: $name price: $price');
   }
 
   void display() {
-    final Iterable<RestoMenuInfo> items = _menu.values;
-
-    for (var item in items) {
-      log('MENU', item);
-    }
+    loop(
+        map: _menu,
+        action: (key, value) {
+          log('MENU', key, value);
+        });
   }
 
   void toNewest() {
-    final List<RestoMenuInfo> values = _menu.values.toList();
-    int index = _menu.values.length - 1;
-
-    while (index != 0) {
-      final item = values[index];
-      log('NEWEST', item);
-
-      index--;
-    }
+    loop(
+      map: _menu,
+      action: (key, value) {
+        log('NEWEST', key, value);
+      },
+      index: _menu.values.length - 1,
+      reversed: true,
+    );
   }
 
   void toOldest() {
-    for (RestoMenuInfo item in _menu.values) {
-      log('OLDEST', item);
-    }
+    loop(map: _menu, action: (key, value) => log('OLDEST', key, value));
   }
 
-  Map<String, RestoMenuInfo> toAlphabeticalOrder() {
-    final sortedMenu = <String, RestoMenuInfo>{};
+  Map<String, int> toAlphabeticalOrder() {
+    final sortedMenu = <String, int>{};
 
-    final List<String> keys = _menu.keys.toList();
-    keys.sort();
-
-    for (final key in keys) {
-      final value = _menu[key];
-
-      if (value != null) {
+    loop(
+      map: _menu,
+      action: (key, value) {
         sortedMenu[key] = value;
-        log('A-Z ORDER', value);
-      }
-    }
+        log('A-Z sort', key, value);
+      },
+      sortedKeys: true,
+    );
 
     return sortedMenu;
   }
 
-  void query({required String value}) {
-    List<RestoMenuInfo?> results = [];
+  void query({required String searchTerm}) {
+    final searchTermString = searchTerm.toUpperCase();
+    print('[ Searching for "$searchTerm" ]');
 
-    print('[ Searching for "$value" ]');
+    final results = <Map<String, int>>[];
 
-    for (final String key in _menu.keys) {
-      if (key.contains(value.toUpperCase())) results.add(_menu[key]);
-    }
+    loop(
+        map: _menu,
+        action: (key, value) {
+          if (key.contains(searchTermString)) {
+            results.add({key: value});
+            log('QUERY', key, value);
+          }
+        });
 
-    for (var item in results) {
-      if (item != null) {
-        log('QUERY', item);
-      }
-      if (item == null) print('[QUERY] no results');
-    }
+    if (results.isEmpty) print('[QUERY] no results');
   }
 
   void add({required String name, required int price}) {
     final String upperName = name.toUpperCase();
-    final index = _menu.length;
-
-    _menu[upperName] = RestoMenuInfo(upperName, price);
-    print('[ADDED] { name: $upperName price: $price index: $index }');
+    _menu[upperName] = price;
+    print('[ADDED] name: $upperName price: $price');
   }
 }
